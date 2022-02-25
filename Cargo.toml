@@ -1,0 +1,15 @@
+[package]
+authors = ["Matthias Stangl <matthias.stangl95@gmail.com>"]
+description = "Beil, a binary export import tool."
+edition = "2021"
+keywords = ["beil", "export", "import", "abi", "dependency"]
+license = "MIT"
+name = "beil"
+readme = "README.md"
+repository = "https://github.com/mtzstngl/beil"
+version = "0.1.0"
+
+[dependencies]
+clap = { version = "3.0.14", features = ["derive"] }
+object = "0.28.3"
+symbolic = { version = "8.6.0", default-features = false, features = ["demangle"] }
