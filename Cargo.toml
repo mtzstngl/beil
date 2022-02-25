@@ -2,6 +2,7 @@
 authors = ["Matthias Stangl <matthias.stangl95@gmail.com>"]
 description = "Beil, a binary export import tool."
 edition = "2021"
+exclude = [".github", ".vscode"]
 keywords = ["beil", "export", "import", "abi", "dependency"]
 license = "MIT"
 name = "beil"
