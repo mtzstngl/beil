@@ -9,6 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     match &args.command {
+        Commands::Info(arguments) => cmd::info::run(arguments),
         Commands::List(command) => cmd::list::run(command),
     }
 
