@@ -1,6 +1,7 @@
 # Beil - Binary Export Import tooL
-[![MIT license](https://img.shields.io/badge/license-MIT-green?style=flat-square)](./LICENSE)
-[![Rust](https://github.com/mtzstngl/beil/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/mtzstngl/beil/actions/workflows/rust.yml)
+[![MIT license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![build](https://github.com/mtzstngl/beil/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/mtzstngl/beil/actions/workflows/rust.yml)
+![Crates.io](https://img.shields.io/crates/v/beil)
 
 Beil, allows you to inspect and compare your binarys imports and exports.
 
