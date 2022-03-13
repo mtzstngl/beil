@@ -189,9 +189,7 @@ pub fn run(arguments: &Arguments) {
         println!(
             "PDB:\n    Age: {}\n    GUID: {}\n    Path: {}",
             pdb.age(),
-            Uuid::from_bytes(&pdb.guid())
-                .unwrap_or_default()
-                .hyphenated(),
+            Uuid::from_bytes(pdb.guid()).to_hyphenated(),
             str::from_utf8(pdb.path()).unwrap_or_default()
         );
     }
