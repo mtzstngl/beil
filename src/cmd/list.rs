@@ -1,4 +1,6 @@
 use clap::Subcommand;
+use object::pe::{ImageNtHeaders32, ImageNtHeaders64};
+use object::read::pe::{ExportTarget, ImageNtHeaders};
 use object::Object;
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -58,7 +60,15 @@ impl Commands {
 
     fn list_exports(&self, file: &Path) -> Result<(), Box<dyn Error>> {
         let binary_data = fs::read(file)?;
-        let object_file = object::File::parse(&*binary_data)?;
+        match object::FileKind::parse(&*binary_data)? {
+            object::FileKind::Pe32 => self.list_exports_pe::<ImageNtHeaders32>(&binary_data),
+            object::FileKind::Pe64 => self.list_exports_pe::<ImageNtHeaders64>(&binary_data),
+            _ => self.list_exports_default(&binary_data),
+        }
+    }
+
+    fn list_exports_default(&self, binary_data: &Vec<u8>) -> Result<(), Box<dyn Error>> {
+        let object_file = object::File::parse(&**binary_data)?;
 
         let exports = object_file.exports()?;
         for export in exports {
@@ -67,11 +77,51 @@ impl Commands {
             let demangled_name = Name::from(function_name);
             let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
             println!(
-                "{:#x}: {} {}",
+                "{:#018x}: {} {}",
                 export.address(),
                 function_name,
                 demangled_name
             );
+        }
+
+        Ok(())
+    }
+
+    fn list_exports_pe<T: ImageNtHeaders>(
+        &self,
+        binary_data: &Vec<u8>,
+    ) -> Result<(), Box<dyn Error>> {
+        let object_file = object::read::pe::PeFile::<T>::parse(&**binary_data)?;
+
+        if let Some(export_table) = object_file.export_table()? {
+            for export in export_table.exports()? {
+                let function_name = str::from_utf8(export.name.unwrap_or_default()).unwrap();
+
+                let demangled_name = Name::from(function_name);
+                let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
+
+                match export.target {
+                    ExportTarget::Address(address) => {
+                        println!("{:#018x}: {} {}", address, function_name, demangled_name)
+                    }
+                    ExportTarget::ForwardByName(dll, name) => println!(
+                        "{:18}: {} {} -> ({}.{}): ",
+                        "",
+                        function_name,
+                        demangled_name,
+                        str::from_utf8(dll).unwrap(),
+                        str::from_utf8(name).unwrap()
+                    ),
+                    ExportTarget::ForwardByOrdinal(dll, ordinal) => println!(
+                        "{:18}: {} {} -> ({}.{}): ",
+                        "",
+                        function_name,
+                        demangled_name,
+                        str::from_utf8(dll).unwrap(),
+                        ordinal
+                    ),
+                }
+            }
         }
 
         Ok(())
