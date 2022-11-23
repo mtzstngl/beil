@@ -1,12 +1,16 @@
-use crate::cmd::*;
+use crate::{cmd::*, output::OutputType};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[clap(about, long_about = None, version)]
 pub struct Cli {
     /// The Commands enumeration that specifies the subcommands.
-    #[clap(subcommand)]
+    #[command(subcommand)]
     pub command: Commands,
+
+    /// Selects the output format.
+    #[arg(long, default_value_t = OutputType::Plain, value_enum)]
+    pub output: OutputType,
 }
 
 #[derive(Subcommand)]
