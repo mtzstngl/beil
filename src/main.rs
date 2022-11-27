@@ -4,13 +4,15 @@ use std::error::Error;
 
 mod cli;
 mod cmd;
+mod output;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
+    let output = args.output.to_output();
 
     match &args.command {
-        Commands::Info(arguments) => cmd::info::run(arguments),
-        Commands::List(command) => cmd::list::run(command),
+        Commands::Info(arguments) => cmd::info::run(arguments, output.as_ref()),
+        Commands::List(command) => cmd::list::run(command, output.as_ref()),
     }
 
     Ok(())

@@ -1,19 +1,11 @@
 use bitflags::bitflags;
-use clap::Args;
-use object::{pe, FileFlags, Object, ObjectSection, ObjectSymbol, SectionFlags};
-use std::{fs, path::PathBuf, str};
-use uuid::Uuid;
-
-// Command line arguments for the info module.
-#[derive(Args)]
-pub struct Arguments {
-    /// The file of which to display information.
-    file: PathBuf,
-}
+use object::{
+    pe, Architecture, Endianness, ObjectKind, SectionKind, SymbolKind, SymbolScope, SymbolSection,
+};
 
 // use bitflags! to make it easier to print the set file flags.
 bitflags! {
-    struct CoffFileFlags : u16 {
+    pub struct CoffFileFlags : u16 {
         // Image only, Windows CE, and Microsoft Windows NT and later.
         // This indicates that the file does not contain base relocations and
         // must therefore be loaded at its preferred base address.
@@ -67,7 +59,7 @@ bitflags! {
 }
 
 bitflags! {
-    struct CoffSectionFlags : u32 {
+    pub struct CoffSectionFlags : u32 {
         // Reserved for future use.
         const RESERVED1 = 0x0000_0000;
         // Reserved for future use.
@@ -160,70 +152,39 @@ bitflags! {
     }
 }
 
-pub fn run(arguments: &Arguments) {
-    let binary_data = fs::read(&arguments.file).unwrap();
-    let object_file = object::File::parse(&*binary_data).unwrap();
+pub struct Information {
+    pub architecture: Architecture,
+    pub endianess: Endianness,
+    pub is_64: bool,
+    pub kind: ObjectKind,
+    pub has_debug_symbols: bool,
+    pub entry_address: u64,
+    pub coff_file_flags: Option<CoffFileFlags>,
+    pub pdb_info: Option<PdbInfo>,
+    pub sections: Vec<Section>,
+    pub symbols: Vec<Symbol>,
+}
 
-    // Basic file information
-    println!("Architecture: {:?}", object_file.architecture());
-    println!("Endianess: {:?}", object_file.endianness());
-    println!("Is 64bit: {}", object_file.is_64());
-    println!("ObjectKind: {:?}", object_file.kind());
-    println!(
-        "Debug symbols available: {}",
-        object_file.has_debug_symbols()
-    );
-    println!("Virtual address of entry point: {:#x}", object_file.entry());
+pub struct PdbInfo {
+    pub age: u32,
+    pub guid: String,
+    pub path: String,
+}
 
-    // File flags
-    // PE/COFF
-    if let FileFlags::Coff { characteristics: c } = object_file.flags() {
-        if let Some(flags) = CoffFileFlags::from_bits(c) {
-            println!("Flags: {:?}", flags);
-        }
-    }
+pub struct Section {
+    pub name: String,
+    pub kind: SectionKind,
+    pub address: u64,
+    pub size: u64,
+    pub segment_name: Option<String>,
+    pub coff_section_flags: Option<CoffSectionFlags>,
+}
 
-    // PDB infos
-    if let Ok(Some(pdb)) = object_file.pdb_info() {
-        println!();
-        println!(
-            "PDB:\n    Age: {}\n    GUID: {}\n    Path: {}",
-            pdb.age(),
-            Uuid::from_bytes(pdb.guid()).hyphenated(),
-            str::from_utf8(pdb.path()).unwrap_or_default()
-        );
-    }
-
-    // Sections
-    println!();
-    println!("Sections:");
-    for section in object_file.sections() {
-        println!("    Name: {}", section.name().unwrap_or_default());
-        println!("    Kind: {:?}", section.kind());
-        println!("    Address: {:#x}", section.address());
-        println!("    Size: {:#x}", section.size());
-        if let Ok(Some(segment_name)) = section.segment_name() {
-            println!("    SegmentName: {}", segment_name);
-        }
-
-        if let SectionFlags::Coff { characteristics: c } = section.flags() {
-            if let Some(flags) = CoffSectionFlags::from_bits(c) {
-                println!("    Flags: {:?}", flags);
-            }
-        }
-        println!();
-    }
-
-    // Symbols
-    println!();
-    println!("Symbols:");
-    for symbol in object_file.symbols() {
-        println!("    Name: {}", symbol.name().unwrap_or_default());
-        println!("    Address: {:#x}", symbol.address());
-        println!("    Size: {:#x}", symbol.size());
-        println!("    Kind: {:?}", symbol.kind());
-        println!("    Scope: {:?}", symbol.scope());
-        println!("    Section: {:?}", symbol.section());
-        println!();
-    }
+pub struct Symbol {
+    pub name: String,
+    pub address: u64,
+    pub size: u64,
+    pub kind: SymbolKind,
+    pub scope: SymbolScope,
+    pub section: SymbolSection,
 }
