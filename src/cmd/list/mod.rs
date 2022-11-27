@@ -18,9 +18,9 @@ use symbolic::{
 
 use crate::output::PrintOutput;
 
-use self::list::*;
+use self::data::*;
 
-pub mod list;
+pub mod data;
 
 #[derive(Subcommand)]
 pub enum Commands {

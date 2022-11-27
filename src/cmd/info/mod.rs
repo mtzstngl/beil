@@ -6,9 +6,9 @@ use uuid::Uuid;
 
 use crate::output::PrintOutput;
 
-use self::info::*;
+use self::data::*;
 
-pub mod info;
+pub mod data;
 
 // Command line arguments for the info module.
 #[derive(Args)]

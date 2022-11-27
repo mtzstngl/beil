@@ -1,5 +1,5 @@
-use crate::cmd::info::info::*;
-use crate::cmd::list::list::*;
+use crate::cmd::info::data::*;
+use crate::cmd::list::data::*;
 
 use super::PrintOutput;
 
