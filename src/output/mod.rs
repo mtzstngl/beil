@@ -1,5 +1,8 @@
 use clap::ValueEnum;
 
+use crate::cmd::info::info::*;
+use crate::cmd::list::list::*;
+
 pub mod plain;
 
 #[derive(ValueEnum, Copy, Clone)]
@@ -22,11 +25,3 @@ pub trait PrintOutput {
     fn print_import(&self, import: &Import);
     fn print_information(&self, information: &Information);
 }
-
-pub struct Information {}
-
-pub struct Dependency {}
-
-pub struct Import {}
-
-pub struct Export {}
