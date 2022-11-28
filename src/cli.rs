@@ -19,6 +19,9 @@ pub enum Commands {
     /// Displays information, such as architecture of a binary.
     Info(info::Arguments),
 
+    /// Compares two binaries and highlights their differences.
+    Diff(diff::Arguments),
+
     /// List different parts of a given binary.
     #[clap(subcommand)]
     List(list::Commands),

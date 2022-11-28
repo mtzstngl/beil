@@ -1,5 +1,6 @@
 use clap::ValueEnum;
 
+use crate::cmd::diff::*;
 use crate::cmd::info::data::*;
 use crate::cmd::list::data::*;
 
@@ -21,6 +22,7 @@ impl OutputType {
 
 pub trait PrintOutput {
     fn print_dependency(&self, dependency: &Dependency);
+    fn print_difference(&self, difference: &Difference);
     fn print_export(&self, export: &Export);
     fn print_import(&self, import: &Import);
     fn print_information(&self, information: &Information);

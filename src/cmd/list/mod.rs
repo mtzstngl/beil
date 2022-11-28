@@ -52,12 +52,10 @@ pub fn run(command: &Commands, output: &dyn PrintOutput) {
     .unwrap()
 }
 
+// TODO(MSt): Move get_* methods into a separate "data" module. Naming needs to be determined
 impl Commands {
-    fn list_dependencies(
-        &self,
-        file: &Path,
-        output: &dyn PrintOutput,
-    ) -> Result<(), Box<dyn Error>> {
+    fn get_dependencies(&self, file: &Path) -> Result<Vec<Dependency>, Box<dyn Error>> {
+        let mut dependencies = Vec::<Dependency>::new();
         let binary_data = fs::read(file)?;
         let object_file = object::File::parse(&*binary_data)?;
 
@@ -67,7 +65,7 @@ impl Commands {
             let library = str::from_utf8(import.library()).unwrap();
 
             if library != last_library {
-                output.print_dependency(&Dependency {
+                dependencies.push(Dependency {
                     library: library.to_owned(),
                 });
             }
@@ -75,27 +73,44 @@ impl Commands {
             last_library = library;
         }
 
-        Ok(())
+        Ok(dependencies)
     }
 
-    fn list_exports(&self, file: &Path, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
+    fn get_imports(&self, file: &Path) -> Result<Vec<Import>, Box<dyn Error>> {
+        let mut import_results = Vec::<Import>::new();
         let binary_data = fs::read(file)?;
-        match object::FileKind::parse(&*binary_data)? {
-            object::FileKind::Pe32 => {
-                self.list_exports_pe::<ImageNtHeaders32>(&binary_data, output)
-            }
-            object::FileKind::Pe64 => {
-                self.list_exports_pe::<ImageNtHeaders64>(&binary_data, output)
-            }
-            _ => self.list_exports_default(&binary_data, output),
+        let object_file = object::File::parse(&*binary_data)?;
+
+        let imports = object_file.imports()?;
+        for import in imports {
+            let library = str::from_utf8(import.library()).unwrap();
+            let function_name = str::from_utf8(import.name()).unwrap();
+
+            let demangled_name = Name::from(function_name);
+            let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
+
+            import_results.push(Import {
+                library: library.to_owned(),
+                function: function_name.to_owned(),
+                function_demangled: demangled_name.to_string(),
+            });
         }
+
+        Ok(import_results)
     }
 
-    fn list_exports_default(
-        &self,
-        binary_data: &Vec<u8>,
-        output: &dyn PrintOutput,
-    ) -> Result<(), Box<dyn Error>> {
+    fn get_exports(&self, file: &Path) -> Result<Vec<Export>, Box<dyn Error>> {
+        let binary_data = fs::read(file)?;
+
+        Ok(match object::FileKind::parse(&*binary_data)? {
+            object::FileKind::Pe32 => self.get_exports_pe::<ImageNtHeaders32>(&binary_data)?,
+            object::FileKind::Pe64 => self.get_exports_pe::<ImageNtHeaders64>(&binary_data)?,
+            _ => self.get_exports_default(&binary_data)?,
+        })
+    }
+
+    fn get_exports_default(&self, binary_data: &Vec<u8>) -> Result<Vec<Export>, Box<dyn Error>> {
+        let mut exports_result = Vec::<Export>::new();
         let object_file = object::File::parse(&**binary_data)?;
 
         let exports = object_file.exports()?;
@@ -105,7 +120,7 @@ impl Commands {
             let demangled_name = Name::from(function_name);
             let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
 
-            output.print_export(&Export {
+            exports_result.push(Export {
                 address: Some(export.address()),
                 function: function_name.to_owned(),
                 function_demangled: demangled_name.to_string(),
@@ -113,14 +128,14 @@ impl Commands {
             });
         }
 
-        Ok(())
+        Ok(exports_result)
     }
 
-    fn list_exports_pe<T: ImageNtHeaders>(
+    fn get_exports_pe<T: ImageNtHeaders>(
         &self,
         binary_data: &Vec<u8>,
-        output: &dyn PrintOutput,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<Vec<Export>, Box<dyn Error>> {
+        let mut exports_result = Vec::<Export>::new();
         let object_file = object::read::pe::PeFile::<T>::parse(&**binary_data)?;
 
         if let Some(export_table) = object_file.export_table()? {
@@ -132,7 +147,7 @@ impl Commands {
 
                 match export.target {
                     pe::ExportTarget::Address(address) => {
-                        output.print_export(&Export {
+                        exports_result.push(Export {
                             address: Some(address.into()),
                             function: function_name.to_owned(),
                             function_demangled: demangled_name.to_string(),
@@ -140,7 +155,7 @@ impl Commands {
                         });
                     }
                     pe::ExportTarget::ForwardByName(dll, name) => {
-                        output.print_export(&Export {
+                        exports_result.push(Export {
                             address: None,
                             function: function_name.to_owned(),
                             function_demangled: demangled_name.to_string(),
@@ -153,7 +168,7 @@ impl Commands {
                         });
                     }
                     pe::ExportTarget::ForwardByOrdinal(dll, ordinal) => {
-                        output.print_export(&Export {
+                        exports_result.push(Export {
                             address: None,
                             function: function_name.to_owned(),
                             function_demangled: demangled_name.to_string(),
@@ -167,27 +182,33 @@ impl Commands {
             }
         }
 
+        Ok(exports_result)
+    }
+
+    fn list_dependencies(
+        &self,
+        file: &Path,
+        output: &dyn PrintOutput,
+    ) -> Result<(), Box<dyn Error>> {
+        self.get_dependencies(file)?
+            .iter()
+            .for_each(|item| output.print_dependency(item));
+
+        Ok(())
+    }
+
+    fn list_exports(&self, file: &Path, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
+        self.get_exports(file)?
+            .iter()
+            .for_each(|item| output.print_export(item));
+
         Ok(())
     }
 
     fn list_imports(&self, file: &Path, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
-        let binary_data = fs::read(file)?;
-        let object_file = object::File::parse(&*binary_data)?;
-
-        let imports = object_file.imports()?;
-        for import in imports {
-            let library = str::from_utf8(import.library()).unwrap();
-            let function_name = str::from_utf8(import.name()).unwrap();
-
-            let demangled_name = Name::from(function_name);
-            let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
-
-            output.print_import(&Import {
-                library: library.to_owned(),
-                function: function_name.to_owned(),
-                function_demangled: demangled_name.to_string(),
-            });
-        }
+        self.get_imports(file)?
+            .iter()
+            .for_each(|item| output.print_import(item));
 
         Ok(())
     }
