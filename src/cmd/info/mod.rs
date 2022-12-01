@@ -4,11 +4,10 @@ use clap::Args;
 use object::{FileFlags, Object, ObjectSection, ObjectSymbol, SectionFlags};
 use uuid::Uuid;
 
-use crate::output::PrintOutput;
-
-use self::data::*;
-
-pub mod data;
+use crate::{
+    data::info::{CoffFileFlags, CoffSectionFlags, Information, PdbInfo, Section, Symbol},
+    output::PrintOutput,
+};
 
 // Command line arguments for the info module.
 #[derive(Args)]

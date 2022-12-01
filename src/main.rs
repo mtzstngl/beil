@@ -4,6 +4,7 @@ use std::error::Error;
 
 mod cli;
 mod cmd;
+mod data;
 mod output;
 
 fn main() -> Result<(), Box<dyn Error>> {
