@@ -1,5 +1,10 @@
-use crate::cmd::info::data::*;
-use crate::cmd::list::data::*;
+use crate::data::{
+    dependency::Dependency,
+    difference::{ChangedData, Difference},
+    export::{Export, ForwardType},
+    import::Import,
+    info::Information,
+};
 
 use super::PrintOutput;
 
@@ -8,6 +13,25 @@ pub(crate) struct Plain {}
 impl PrintOutput for Plain {
     fn print_dependency(&self, dependency: &Dependency) {
         println!("{}", dependency.library);
+    }
+
+    fn print_difference(&self, difference: &Difference) {
+        let change_data = match difference {
+            Difference::Added(data) => {
+                print!("+ ");
+                data
+            }
+            Difference::Removed(data) => {
+                print!("- ");
+                data
+            }
+        };
+
+        match change_data {
+            ChangedData::Dependency(dependency) => self.print_dependency(dependency),
+            ChangedData::Export(export) => self.print_export(export),
+            ChangedData::Import(import) => self.print_import(import),
+        }
     }
 
     fn print_export(&self, export: &Export) {

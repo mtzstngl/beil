@@ -3,6 +3,11 @@ use object::{
     pe, Architecture, Endianness, ObjectKind, SectionKind, SymbolKind, SymbolScope, SymbolSection,
 };
 
+use std::{error::Error, fs, path::Path};
+
+use object::{FileFlags, Object, ObjectSection, ObjectSymbol, SectionFlags};
+use uuid::Uuid;
+
 // use bitflags! to make it easier to print the set file flags.
 bitflags! {
     pub struct CoffFileFlags : u16 {
@@ -187,4 +192,80 @@ pub struct Symbol {
     pub kind: SymbolKind,
     pub scope: SymbolScope,
     pub section: SymbolSection,
+}
+
+impl Information {
+    pub fn read(file: &Path) -> Result<Self, Box<dyn Error>> {
+        let binary_data = fs::read(&file)?;
+        let object_file = object::File::parse(&*binary_data)?;
+
+        // File flags for PE/COFF
+        let flags = if let FileFlags::Coff { characteristics: c } = object_file.flags() {
+            CoffFileFlags::from_bits(c)
+        } else {
+            None
+        };
+
+        // PDB infos
+        let pdb = if let Ok(Some(pdb_info)) = object_file.pdb_info() {
+            Some(PdbInfo {
+                age: pdb_info.age(),
+                guid: Uuid::from_bytes(pdb_info.guid()).hyphenated().to_string(),
+                path: String::from_utf8_lossy(pdb_info.path()).into(),
+            })
+        } else {
+            None
+        };
+
+        // Sections
+        let mut sections = Vec::<Section>::new();
+        for section in object_file.sections() {
+            let flags = if let SectionFlags::Coff { characteristics: c } = section.flags() {
+                CoffSectionFlags::from_bits(c)
+            } else {
+                None
+            };
+
+            let segment_name = if let Ok(Some(name)) = section.segment_name() {
+                Some(name.to_string())
+            } else {
+                None
+            };
+
+            sections.push(Section {
+                address: section.address(),
+                name: section.name().unwrap_or_default().to_string(),
+                kind: section.kind(),
+                size: section.size(),
+                segment_name,
+                coff_section_flags: flags,
+            });
+        }
+
+        // Symbols
+        let mut symbols = Vec::<Symbol>::new();
+        for symbol in object_file.symbols() {
+            symbols.push(Symbol {
+                address: symbol.address(),
+                kind: symbol.kind(),
+                name: symbol.name().unwrap_or_default().to_owned(),
+                scope: symbol.scope(),
+                section: symbol.section(),
+                size: symbol.size(),
+            });
+        }
+
+        Ok(Information {
+            architecture: object_file.architecture(),
+            endianess: object_file.endianness(),
+            is_64: object_file.is_64(),
+            kind: object_file.kind(),
+            has_debug_symbols: object_file.has_debug_symbols(),
+            entry_address: object_file.entry(),
+            coff_file_flags: flags,
+            pdb_info: pdb,
+            sections,
+            symbols,
+        })
+    }
 }
