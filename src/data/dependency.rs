@@ -15,7 +15,7 @@ impl Dependency {
         let imports = object_file.imports()?;
         let mut last_library = "";
         for import in imports {
-            let library = str::from_utf8(import.library()).unwrap();
+            let library = str::from_utf8(import.library())?;
 
             if library != last_library {
                 dependencies.push(Dependency {

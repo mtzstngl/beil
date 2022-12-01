@@ -30,13 +30,14 @@ pub enum Commands {
     },
 }
 
-pub fn run(command: &Commands, output: &dyn PrintOutput) {
+pub fn run(command: &Commands, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
     match command {
-        Commands::Dependencies { file } => command.list_dependencies(file, output),
-        Commands::Exports { file } => command.list_exports(file, output),
-        Commands::Imports { file } => command.list_imports(file, output),
+        Commands::Dependencies { file } => command.list_dependencies(file, output)?,
+        Commands::Exports { file } => command.list_exports(file, output)?,
+        Commands::Imports { file } => command.list_imports(file, output)?,
     }
-    .unwrap()
+
+    Ok(())
 }
 
 impl Commands {

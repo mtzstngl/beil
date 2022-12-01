@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 use clap::Args;
 
@@ -14,7 +14,7 @@ pub struct Arguments {
     new_file: PathBuf,
 }
 
-pub fn run(arguments: &Arguments, output: &dyn PrintOutput) {
+pub fn run(arguments: &Arguments, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
     // TODO(MSt): Use the data from the future data module and use that to compare
     unimplemented!("TODO")
 }

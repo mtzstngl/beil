@@ -3,7 +3,7 @@ use object::{
     pe, Architecture, Endianness, ObjectKind, SectionKind, SymbolKind, SymbolScope, SymbolSection,
 };
 
-use std::{fs, path::Path};
+use std::{error::Error, fs, path::Path};
 
 use object::{FileFlags, Object, ObjectSection, ObjectSymbol, SectionFlags};
 use uuid::Uuid;
@@ -195,10 +195,9 @@ pub struct Symbol {
 }
 
 impl Information {
-    // TODO(MSt): Return Result with dyn Error
-    pub fn read(file: &Path) -> Self {
-        let binary_data = fs::read(&file).unwrap();
-        let object_file = object::File::parse(&*binary_data).unwrap();
+    pub fn read(file: &Path) -> Result<Self, Box<dyn Error>> {
+        let binary_data = fs::read(&file)?;
+        let object_file = object::File::parse(&*binary_data)?;
 
         // File flags for PE/COFF
         let flags = if let FileFlags::Coff { characteristics: c } = object_file.flags() {
@@ -256,7 +255,7 @@ impl Information {
             });
         }
 
-        Information {
+        Ok(Information {
             architecture: object_file.architecture(),
             endianess: object_file.endianness(),
             is_64: object_file.is_64(),
@@ -267,6 +266,6 @@ impl Information {
             pdb_info: pdb,
             sections,
             symbols,
-        }
+        })
     }
 }

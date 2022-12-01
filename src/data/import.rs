@@ -20,8 +20,8 @@ impl Import {
 
         let imports = object_file.imports()?;
         for import in imports {
-            let library = str::from_utf8(import.library()).unwrap();
-            let function_name = str::from_utf8(import.name()).unwrap();
+            let library = str::from_utf8(import.library())?;
+            let function_name = str::from_utf8(import.name())?;
 
             let demangled_name = Name::from(function_name);
             let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());

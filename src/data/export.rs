@@ -44,7 +44,7 @@ impl Export {
 
         let exports = object_file.exports()?;
         for export in exports {
-            let function_name = str::from_utf8(export.name()).unwrap();
+            let function_name = str::from_utf8(export.name())?;
 
             let demangled_name = Name::from(function_name);
             let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());
@@ -66,7 +66,7 @@ impl Export {
 
         if let Some(export_table) = object_file.export_table()? {
             for export in export_table.exports()? {
-                let function_name = str::from_utf8(export.name.unwrap_or_default()).unwrap();
+                let function_name = str::from_utf8(export.name.unwrap_or_default())?;
 
                 let demangled_name = Name::from(function_name);
                 let demangled_name = demangled_name.try_demangle(DemangleOptions::complete());

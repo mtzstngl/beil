@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 use clap::Args;
 
@@ -11,6 +11,7 @@ pub struct Arguments {
     file: PathBuf,
 }
 
-pub fn run(arguments: &Arguments, output: &dyn PrintOutput) {
-    output.print_information(&Information::read(&arguments.file));
+pub fn run(arguments: &Arguments, output: &dyn PrintOutput) -> Result<(), Box<dyn Error>> {
+    output.print_information(&Information::read(&arguments.file)?);
+    Ok(())
 }
