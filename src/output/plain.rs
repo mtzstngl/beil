@@ -50,7 +50,7 @@ impl PrintOutput for Plain {
 
         // File flags
         // PE/COFF
-        if let Some(flags) = information.coff_file_flags {
+        if let Some(flags) = &information.coff_file_flags {
             println!("Flags: {:?}", flags);
         }
 
@@ -76,7 +76,7 @@ impl PrintOutput for Plain {
                 println!("\tSegmentName: {}", segment_name);
             }
 
-            if let Some(flags) = section.coff_section_flags {
+            if let Some(flags) = &section.coff_section_flags {
                 println!("\tFlags: {:?}", flags);
             }
             println!();

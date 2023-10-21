@@ -5,6 +5,7 @@ use object::{
 
 // use bitflags! to make it easier to print the set file flags.
 bitflags! {
+    #[derive(Debug)]
     pub struct CoffFileFlags : u16 {
         // Image only, Windows CE, and Microsoft Windows NT and later.
         // This indicates that the file does not contain base relocations and
@@ -59,6 +60,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Debug)]
     pub struct CoffSectionFlags : u32 {
         // Reserved for future use.
         const RESERVED1 = 0x0000_0000;
